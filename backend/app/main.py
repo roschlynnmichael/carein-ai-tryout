@@ -10,12 +10,15 @@ commlog_models.Base.metadata.create_all(bind = engine)
 
 app = FastAPI(title = "CareIN AI Call Summary API")
 
-origins = ["http://localhost:3000"]
+allowed_origins = [
+    "http://localhost:3001",
+    "http://localhost:3000",
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins = origins,
-    allow_credentials = True,
+    allow_origins = allowed_origins,
+    allow_credentials = False,
     allow_methods = ["*"],
     allow_headers = ["*"]
 )

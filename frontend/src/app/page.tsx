@@ -8,7 +8,7 @@ import TranscriptForm from '@/components/TranscriptForm'; // <-- Import the new 
 import CommlogDisplay from '@/components/CommlogDisplay';
 
 // Define the base URL for your API
-const API_BASE_URL = 'http://localhost:5005/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5005/api/v1';
 
 async function fetchSummaries(): Promise<CallSummary[]> {
   try {

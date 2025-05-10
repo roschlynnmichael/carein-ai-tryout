@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "5005:5005"
+    environment:
+      # Replace with your actual OpenAI API key
+      # For production, consider using Docker secrets or a more secure way to manage this
+      - OPENAI_API_KEY=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
+      - DATABASE_URL=sqlite:////app/carein.db # Path inside the container
+    volumes:
+      - backend_db_data:/app # Mount a volume for the SQLite database to persist data
+    # restart: unless-stopped # Optional: auto-restart policy
+
+  frontend:
+    build:
+      context: ./frontend
+      # dockerfile: Dockerfile # Assumes Dockerfile is named 'Dockerfile'
+      # args: # If you needed build-time args for frontend Dockerfile
+      #   - NEXT_PUBLIC_API_BASE_URL=http://localhost:5005/api/v1 # Example for build time
+    ports:
+      - "3000:3000"
+    environment:
+      # This is a runtime environment variable for Next.js
+      # The frontend will use this to connect to the backend
+      - NEXT_PUBLIC_API_BASE_URL=http://backend:5005/api/v1
+      # Note: 'backend' is the service name of our FastAPI app in Docker Compose
+      # Docker Compose provides DNS resolution between services.
+    depends_on:
+      - backend # Ensures backend starts (but doesn't guarantee it's ready)
+    # restart: unless-stopped # Optional: auto-restart policy
+
+volumes:
+  backend_db_data: # Defines the named volume for the database
