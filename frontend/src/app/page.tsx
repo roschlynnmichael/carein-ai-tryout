@@ -11,7 +11,7 @@ const API_BASE_URL = 'http://localhost:5005/api/v1';
 
 async function fetchSummaries(): Promise<CallSummary[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/summaries/?limit=10`); // Fetch last 10 for now
+    const response = await fetch(`${API_BASE_URL}/summaries/?limit=20`); // Fetch more to test scroll
     if (!response.ok) {
       console.error(`HTTP error! status: ${response.status}`, await response.text());
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -74,117 +74,107 @@ export default function Home() {
   };
 
   return (
-    <div className="grid grid-rows-[auto_1fr_auto] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-gradient-to-br from-slate-900 to-slate-800 text-slate-100">
-      {/* Header Section - Keeping existing branding for now */}
-      <header className="flex flex-col items-center sm:items-start w-full max-w-5xl">
-        <Image
-          className="dark:invert filter brightness-0 invert mb-4" // Adjusted for dark theme
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <h1 className="text-4xl font-bold text-center sm:text-left mb-2">
-          AI Call Summary Dashboard
-        </h1>
-        <p className="text-slate-400 text-center sm:text-left mb-8">
-          Review and manage AI-generated call summaries.
-        </p>
+    <div className="flex flex-col h-screen font-[family-name:var(--font-geist-sans)] bg-gradient-to-br from-slate-900 to-slate-800 text-slate-100 overflow-hidden">
+      {/* Header: Fixed height, no scroll */}
+      <header className="flex-shrink-0 p-6 sm:px-12 border-b border-slate-700">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start w-full max-w-7xl mx-auto">
+          <Image
+            className="filter brightness-0 invert mb-2 sm:mb-0 sm:mr-6"
+            src="/next.svg"
+            alt="Next.js logo"
+            width={150}
+            height={32}
+            priority
+          />
+          <div>
+            <h1 className="text-3xl font-bold text-center sm:text-left">
+              AI Call Summary Dashboard
+            </h1>
+            <p className="text-slate-400 text-center sm:text-left text-sm">
+              Review and manage AI-generated call summaries.
+            </p>
+          </div>
+        </div>
       </header>
 
-      {/* Main Content Area for Dashboard */}
-      <main className="flex flex-col gap-8 row-start-2 items-center w-full max-w-5xl">
+      {/* Main Content Area: Takes remaining space, flex row for two columns */}
+      <main className="flex-grow flex flex-col lg:flex-row gap-6 p-6 sm:p-8 overflow-hidden w-full max-w-7xl mx-auto">
         
-        {/* Transcript Input Form */}
-        <div className="w-full p-6 bg-slate-800/50 rounded-xl shadow-2xl border border-slate-700">
-          <h2 className="text-2xl font-semibold mb-4 text-sky-400">Submit New Transcript</h2>
-          {/* Use the TranscriptForm component */}
-          <TranscriptForm 
-            apiBaseUrl={API_BASE_URL} 
-            onSummaryCreated={loadData} // Pass loadData to refresh list
-          />
-        </div>
-
-        {/* Call Summaries List */}
-        <div className="w-full p-6 bg-slate-800/50 rounded-xl shadow-2xl border border-slate-700 mt-8"> {/* Added mt-8 for spacing */}
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-semibold text-sky-400">Recent Call Summaries</h2>
+        {/* Left Panel: Summaries List (Scrollable) */}
+        <section className="w-full lg:w-3/5 flex flex-col bg-slate-800/50 rounded-xl shadow-2xl border border-slate-700 overflow-hidden">
+          <div className="flex-shrink-0 flex justify-between items-center p-4 border-b border-slate-700">
+            <h2 className="text-xl font-semibold text-sky-400">Recent Call Summaries</h2>
             <button 
               onClick={loadData} 
-              disabled={isLoading}
-              className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-md disabled:opacity-50 transition-colors"
+              disabled={isLoading || Object.values(rerunStatus).some(s => s === 'loading')}
+              className="px-3 py-1.5 text-xs bg-sky-600 hover:bg-sky-500 text-white rounded-md disabled:opacity-50 transition-colors"
             >
               {isLoading ? 'Refreshing...' : 'Refresh'}
             </button>
           </div>
-
-          {isLoading && <p className="text-slate-300">Loading summaries...</p>}
-          {error && <p className="text-red-400">Error loading summaries: {error}</p>}
-          {!isLoading && !error && summaries.length === 0 && (
-            <p className="text-slate-400">No summaries found. Submit a transcript to get started!</p>
-          )}
-          {!isLoading && !error && summaries.length > 0 && (
-            <ul className="space-y-6">
-              {summaries.map((summary) => (
-                <li key={summary.id} className="bg-slate-700/50 p-6 rounded-lg shadow-lg border border-slate-600 hover:border-sky-500 transition-all duration-300 ease-in-out transform hover:scale-[1.01]">
-                  <div className="mb-3 flex justify-between items-center">
+          {/* Scrollable Content Area for Summaries */}
+          <div className="flex-grow p-4 space-y-4 overflow-y-auto custom-scrollbar">
+            {isLoading && <p className="text-slate-300 text-center py-10">Loading summaries...</p>}
+            {error && <p className="text-red-400 text-center py-10">Error: {error}</p>}
+            {!isLoading && !error && summaries.length === 0 && (
+              <p className="text-slate-400 text-center py-10">No summaries found. Submit one to get started!</p>
+            )}
+            {!isLoading && !error && summaries.length > 0 && (
+              summaries.map((summary) => (
+                <li key={summary.id} className="list-none bg-slate-700/60 p-4 rounded-lg shadow-lg border border-slate-600 hover:border-sky-500 transition-all duration-300 ease-in-out transform hover:scale-[1.005]">
+                  <div className="mb-2 flex justify-between items-center">
                     <span className="font-semibold text-xs text-sky-400 bg-sky-900/50 px-2 py-1 rounded">ID: {summary.id}</span>
                     <span className="text-xs text-slate-400">
-                      Created: {new Date(summary.created_at).toLocaleString()}
+                      {new Date(summary.created_at).toLocaleString()}
                     </span>
                   </div>
                   <div>
-                    <h3 className="text-lg font-medium text-slate-200 mb-1">Transcript:</h3>
-                    <p className="text-slate-300 whitespace-pre-wrap bg-slate-800 p-3 rounded text-sm max-h-28 overflow-y-auto custom-scrollbar">
+                    <h3 className="text-base font-medium text-slate-200 mb-1">Transcript:</h3>
+                    <p className="text-slate-300 whitespace-pre-wrap bg-slate-800 p-2.5 rounded text-xs max-h-24 overflow-y-auto custom-scrollbar">
                       {summary.transcript}
                     </p>
                   </div>
-                  <div className="mt-4">
-                    <h3 className="text-lg font-medium text-emerald-400 mb-1">Summary:</h3>
-                    <p className="text-slate-200 whitespace-pre-wrap bg-slate-800 p-3 rounded text-sm">
-                      {summary.summary || <span className="text-slate-500 italic">No summary generated yet.</span>}
+                  <div className="mt-3">
+                    <h3 className="text-base font-medium text-emerald-400 mb-1">Summary:</h3>
+                    <p className="text-slate-200 whitespace-pre-wrap bg-slate-800 p-2.5 rounded text-xs">
+                      {summary.summary || <span className="text-slate-500 italic">No summary.</span>}
                     </p>
                   </div>
-                  <div className="mt-4 flex justify-end">
+                  <div className="mt-3 flex justify-end">
                     <button 
                       onClick={() => handleRerunSummary(summary.id)}
                       disabled={rerunStatus[summary.id] === 'loading'}
-                      className="px-3 py-1 text-xs bg-amber-600 hover:bg-amber-500 disabled:bg-amber-800 disabled:cursor-not-allowed text-white rounded-md transition-colors"
+                      className="px-2.5 py-1 text-xs bg-amber-600 hover:bg-amber-500 disabled:bg-amber-800 disabled:cursor-not-allowed text-white rounded-md transition-colors"
                     >
-                      {rerunStatus[summary.id] === 'loading' ? 'Re-running...' : 'Re-run Summary'}
+                      {rerunStatus[summary.id] === 'loading' ? 'Re-running...' : 'Re-run'}
                     </button>
                   </div>
                   {rerunStatus[summary.id] === 'error' && (
-                    <p className="text-xs text-red-400 mt-2 text-right">Failed to re-run. Please try again.</p>
+                    <p className="text-xs text-red-400 mt-1 text-right">Failed to re-run.</p>
                   )}
                 </li>
-              ))}
-            </ul>
-          )}
-        </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        {/* Right Panel: Transcript Form (Can also be made scrollable if its content grows) */}
+        <section className="w-full lg:w-2/5 flex flex-col bg-slate-800/50 rounded-xl shadow-2xl border border-slate-700 p-4 lg:overflow-y-auto custom-scrollbar"> {/* Added overflow for form too if needed */}
+          <h2 className="flex-shrink-0 text-xl font-semibold mb-3 text-sky-400">Submit New Transcript</h2>
+          <div className="flex-grow"> {/* Allows form to take space if section scrolls */}
+            <TranscriptForm 
+              apiBaseUrl={API_BASE_URL} 
+              onSummaryCreated={loadData}
+            />
+          </div>
+        </section>
       </main>
 
-      {/* Footer - Keeping existing for now */}
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center text-xs text-slate-500">
-        <a
-          className="flex items-center gap-2 hover:text-sky-400 transition-colors"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image aria-hidden src="/file.svg" alt="File icon" width={14} height={14} className="filter brightness-0 invert opacity-70" />
-          Learn Next.js
-        </a>
-        <a
-          className="flex items-center gap-2 hover:text-sky-400 transition-colors"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image aria-hidden src="/window.svg" alt="Window icon" width={14} height={14} className="filter brightness-0 invert opacity-70" />
-          Next.js Examples
-        </a>
+      {/* Footer: Fixed height, no scroll */}
+      <footer className="flex-shrink-0 p-3 border-t border-slate-700 text-center">
+        <p className="text-xs text-slate-500">
+          CareIN AI Call Summary Module &copy; {new Date().getFullYear()}
+        </p>
       </footer>
     </div>
   );
