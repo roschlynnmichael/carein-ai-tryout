@@ -24,3 +24,29 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Custom Scrollbar for Webkit browsers (Chrome, Safari, new Edge) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: theme('colors.slate.800'); /* Or your preferred track color */
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: theme('colors.sky.600'); /* Or your preferred thumb color */
+  border-radius: 10px;
+  border: 2px solid theme('colors.slate.800'); /* Creates padding around thumb */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: theme('colors.sky.500'); /* Or your preferred thumb hover color */
+}
+
+/* For Firefox (less customization possible) */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: theme('colors.sky.600') theme('colors.slate.800'); /* thumb and track */
+}
