@@ -28,6 +28,7 @@ export default function Home() {
   const [summaries, setSummaries] = useState<CallSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [rerunStatus, setRerunStatus] = useState<{ [key: number]: 'idle' | 'loading' | 'error' }>({});
 
   const loadData = async () => { // Made loadData accessible for manual refresh later
     setIsLoading(true);
@@ -45,6 +46,32 @@ export default function Home() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleRerunSummary = async (summaryId: number) => {
+    setRerunStatus(prev => ({ ...prev, [summaryId]: 'loading' }));
+    try {
+      const response = await fetch(`${API_BASE_URL}/summaries/${summaryId}/rerun`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: "Unknown server error" }));
+        throw new Error(errorData.detail || `Failed to re-run summary (status: ${response.status})`);
+      }
+      const updatedSummary = await response.json() as CallSummary;
+
+      // Update the specific summary in the list
+      setSummaries(prevSummaries =>
+        prevSummaries.map(s => (s.id === summaryId ? updatedSummary : s))
+      );
+      setRerunStatus(prev => ({ ...prev, [summaryId]: 'idle' }));
+      // Or, for simplicity, just reload all data:
+      // await loadData(); 
+    } catch (e) {
+      console.error(`Error re-running summary ${summaryId}:`, e);
+      alert(`Failed to re-run summary: ${e instanceof Error ? e.message : "Unknown error"}`);
+      setRerunStatus(prev => ({ ...prev, [summaryId]: 'error' }));
+    }
+  };
 
   return (
     <div className="grid grid-rows-[auto_1fr_auto] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-gradient-to-br from-slate-900 to-slate-800 text-slate-100">
@@ -120,11 +147,17 @@ export default function Home() {
                     </p>
                   </div>
                   <div className="mt-4 flex justify-end">
-                    {/* TODO: Add Re-run button here later */}
-                    <button className="px-3 py-1 text-xs bg-amber-600 hover:bg-amber-500 text-white rounded-md transition-colors">
-                      Re-run (soon)
+                    <button 
+                      onClick={() => handleRerunSummary(summary.id)}
+                      disabled={rerunStatus[summary.id] === 'loading'}
+                      className="px-3 py-1 text-xs bg-amber-600 hover:bg-amber-500 disabled:bg-amber-800 disabled:cursor-not-allowed text-white rounded-md transition-colors"
+                    >
+                      {rerunStatus[summary.id] === 'loading' ? 'Re-running...' : 'Re-run Summary'}
                     </button>
                   </div>
+                  {rerunStatus[summary.id] === 'error' && (
+                    <p className="text-xs text-red-400 mt-2 text-right">Failed to re-run. Please try again.</p>
+                  )}
                 </li>
               ))}
             </ul>
